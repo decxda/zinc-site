@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Zinc Client — Private utility mod for Minecraft 1.21.1. Combat, movement, render, world, DonutSMP modules and more.">
+  <title>Zinc Client — Private Utility Mod</title>
+  <link rel="icon" href="icon.png" type="image/png">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+    :root{--bg:#09090b;--surface:#111113;--surface2:#18181b;--border:#27272a;--red:#ff2d2d;--red-dim:#cc1a1a;--red-glow:rgba(255,45,45,.15);--text:#fafafa;--text2:#a1a1aa;--text3:#52525b}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+    canvas#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+    .container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(12px);background:rgba(9,9,11,.8);border-bottom:1px solid var(--border)}
+    nav .inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px}
+    nav .logo-wrap{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+    nav .logo-img{width:32px;height:32px;object-fit:contain;border-radius:6px}
+    nav .logo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.1rem;color:var(--red);letter-spacing:3px}
+    nav .links{display:flex;gap:28px;align-items:center}
+    nav .links a{color:var(--text2);text-decoration:none;font-size:.875rem;font-weight:500;transition:color .2s}
+    nav .links a:hover{color:var(--text)}
+    .btn-sm{background:var(--red);color:#fff;padding:8px 20px;border-radius:8px;font-size:.8rem;font-weight:600;text-decoration:none;transition:all .2s;border:none;cursor:pointer}
+    .btn-sm:hover{background:#e62626;transform:translateY(-1px);box-shadow:0 4px 20px var(--red-glow)}
+
+    /* HERO */
+    .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;color:var(--text2);margin-bottom:32px;font-weight:500}
+    .hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .hero-logo{width:88px;height:88px;object-fit:contain;margin-bottom:20px;border-radius:16px}
+    .hero h1{font-family:'JetBrains Mono',monospace;font-size:clamp(4rem,12vw,8rem);font-weight:900;letter-spacing:8px;line-height:1;background:linear-gradient(180deg,#fff 0%,var(--red) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+    .hero .sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--text2);font-weight:400;margin-bottom:12px}
+    .hero .ver{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text3);margin-bottom:48px}
+    .hero-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    .btn-main{display:inline-flex;align-items:center;gap:10px;background:var(--red);color:#fff;padding:14px 36px;border-radius:12px;font-size:.95rem;font-weight:600;text-decoration:none;transition:all .25s;border:none;cursor:pointer}
+    .btn-main:hover{background:#e62626;transform:translateY(-2px);box-shadow:0 8px 32px var(--red-glow)}
+    .btn-main svg{width:18px;height:18px}
+    .btn-ghost{display:inline-flex;align-items:center;gap:10px;background:transparent;color:var(--text);padding:14px 36px;border-radius:12px;font-size:.95rem;font-weight:600;text-decoration:none;transition:all .25s;border:1px solid var(--border);cursor:pointer}
+    .btn-ghost:hover{border-color:var(--text3);background:var(--surface);transform:translateY(-2px)}
+
+    /* STATS */
+    .stats{display:flex;justify-content:center;gap:48px;padding:40px 0 80px;flex-wrap:wrap}
+    .stat{text-align:center}
+    .stat .num{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:800;color:var(--red)}
+    .stat .label{font-size:.8rem;color:var(--text3);margin-top:4px}
+
+    /* SECTION COMMON */
+    section{padding:80px 0}
+    .section-label{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin-bottom:12px}
+    .section-title{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:800;margin-bottom:16px}
+    .section-desc{color:var(--text2);max-width:560px;line-height:1.7;font-size:.95rem}
+
+    /* FEATURES */
+    #features{border-top:1px solid var(--border)}
+    .features-header{text-align:center;margin-bottom:56px}
+    .features-header .section-desc{margin:0 auto}
+    .cat-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:40px}
+    .cat-tab{padding:8px 18px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+    .cat-tab:hover{border-color:var(--text3);color:var(--text)}
+    .cat-tab.active{background:var(--red);border-color:var(--red);color:#fff}
+    .modules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .mod-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:all .2s;position:relative;overflow:hidden}
+    .mod-card:hover{border-color:var(--red-dim);transform:translateY(-2px);background:var(--surface2)}
+    .mod-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cat-color,var(--red));opacity:.6}
+    .mod-card .name{font-weight:600;font-size:.85rem;margin-bottom:4px}
+    .mod-card .desc{font-size:.72rem;color:var(--text3);line-height:1.4}
+
+    /* DOWNLOAD */
+    #download{border-top:1px solid var(--border)}
+    .dl-box{text-align:center;max-width:600px;margin:0 auto}
+    .dl-box .section-desc{margin:0 auto 40px}
+    .dl-info{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:24px}
+    .dl-meta{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text3)}
+    .dl-deps{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+    .dep{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;color:var(--text2);text-decoration:none;transition:all .2s}
+    .dep:hover{border-color:var(--text3)}
+
+    /* FOOTER */
+    footer{border-top:1px solid var(--border);padding:40px 0;text-align:center}
+    footer p{color:var(--text3);font-size:.8rem}
+    footer .foot-brand{font-family:'JetBrains Mono',monospace;color:var(--red-dim);letter-spacing:2px;font-weight:700;font-size:.85rem;margin-bottom:8px}
+
+    @media(max-width:640px){
+      .stats{gap:24px}
+      .hero h1{letter-spacing:4px}
+      nav .links a:not(.btn-sm){display:none}
+    }
+
+    .fade-in{opacity:0;transform:translateY(20px);transition:all .6s ease}
+    .fade-in.visible{opacity:1;transform:translateY(0)}
+  </style>
+</head>
+<body>
+
+<canvas id="particles" aria-hidden="true"></canvas>
+
+<nav>
+  <div class="inner">
+    <a href="#" class="logo-wrap">
+      <img src="icon.png" alt="Zinc" class="logo-img" width="32" height="32">
+      <span class="logo">ZINC</span>
+    </a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="#download" class="btn-sm">Get Client</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="hero-badge"><span class="dot"></span> Private &middot; Undetected &middot; 1.21.1</div>
+    <img src="icon.png" alt="" class="hero-logo" width="88" height="88">
+    <h1>ZINC</h1>
+    <p class="sub">The only client you'll ever need.</p>
+    <p class="ver">v3.2.1-stable &middot; build 847 &middot; Fabric 1.21.1</p>
+    <div class="hero-btns">
+      <a href="https://github.com/decxda/Zinc-Client/raw/refs/heads/main/Zinc_Client-3.2.1.jar" class="btn-main">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download v3.2.1
+      </a>
+      <a href="#features" class="btn-ghost">View Features</a>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="stats fade-in">
+      <div class="stat"><div class="num">80</div><div class="label">Modules</div></div>
+      <div class="stat"><div class="num">8</div><div class="label">Categories</div></div>
+      <div class="stat"><div class="num">0.0</div><div class="label">Flag Score</div></div>
+      <div class="stat"><div class="num">24/7</div><div class="label">Undetected</div></div>
+    </div>
+  </div>
+
+  <section id="features" aria-labelledby="features-title">
+    <div class="container">
+      <div class="features-header fade-in">
+        <div class="section-label">Modules</div>
+        <h2 id="features-title" class="section-title">80 features. Zero compromises.</h2>
+        <p class="section-desc">Combat, movement, render, world, DonutSMP, and client modules. Every setting is tunable.</p>
+      </div>
+      <div class="cat-tabs fade-in" id="catTabs" role="tablist"></div>
+      <div class="modules-grid fade-in" id="modulesGrid"></div>
+    </div>
+  </section>
+
+  <section id="download" aria-labelledby="download-title">
+    <div class="container">
+      <div class="dl-box fade-in">
+        <div class="section-label">Download</div>
+        <h2 id="download-title" class="section-title">Get Zinc Client</h2>
+        <p class="section-desc">Latest stable build for Minecraft 1.21.1. Requires Fabric Loader and Fabric API.</p>
+        <a href="https://github.com/decxda/Zinc-Client/raw/refs/heads/main/Zinc_Client-3.2.1.jar" class="btn-main" id="dlBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download v3.2.1
+        </a>
+        <div class="dl-info">
+          <div class="dl-meta">Zinc_Client-3.2.1.jar &middot; 2.1 MB &middot; Fabric 1.21.1</div>
+        </div>
+        <div class="dl-deps">
+          <a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener noreferrer" class="dep">Fabric Installer</a>
+          <a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener noreferrer" class="dep">Fabric API</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-brand">ZINC CLIENT</div>
+  <p>&copy; 2026 Zinc. Not for sale. Not for leak.</p>
+</footer>
+
+<script>
+// --- PARTICLES (more visible, twinkle in/out) ---
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W, H, dots = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function createDot() {
+  const phase = Math.random() * Math.PI * 2;
+  return {
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: Math.random() * 2.2 + 0.8,
+    dx: (Math.random() - 0.5) * 0.35,
+    dy: (Math.random() - 0.5) * 0.35,
+    phase,
+    speed: 0.02 + Math.random() * 0.03
+  };
+}
+
+for (let i = 0; i < 120; i++) dots.push(createDot());
+
+function drawDots() {
+  ctx.clearRect(0, 0, W, H);
+  const t = Date.now() / 1000;
+  for (const d of dots) {
+    const alpha = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * d.speed + d.phase));
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 45, 45, ${alpha})`;
+    ctx.fill();
+    d.x += d.dx;
+    d.y += d.dy;
+    if (d.x < 0 || d.x > W) d.dx *= -1;
+    if (d.y < 0 || d.y > H) d.dy *= -1;
+  }
+  requestAnimationFrame(drawDots);
+}
+drawDots();
+
+// --- FADE IN ---
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+
+// --- REAL MODULES FROM ZINC CLIENT ---
+const modules = {
+  Combat: [
+    ["Elytra Swap", "Seamlessly swap between elytra and chestplate with a keybind"],
+    ["Mace Swap", "Switches to a mace when attacking"],
+    ["HitBox", "Expands a player's hitbox"],
+    ["Static HitBoxes", "Expands a player's hitbox"],
+    ["Auto Totem", "Automatically holds totem in your off hand"],
+    ["Hover Totem", "Equips totem in offhand when hovering in inventory"],
+    ["Auto Inv Totem", "Automatically equips totems from inventory"],
+    ["Anchor Macro", "Automatically blows up respawn anchors for you"],
+    ["Auto Crystal", "Automatically places and breaks crystals for PvP"],
+    ["Double Anchor", "Automatically places 2 anchors"],
+    ["Kill Aura", "Auto-targets and attacks nearby entities"],
+    ["Velocity", "Reduces or cancels knockback from hits"],
+    ["Criticals", "Forces critical hits on every swing"],
+    ["Reach", "Extends your attack range beyond vanilla"],
+    ["Auto Armor", "Equips the best armor pieces automatically"],
+    ["Trigger Bot", "Attacks any entity on your crosshair"],
+    ["Auto Gapple", "Auto eats golden apples at low health"],
+    ["Auto Pot", "Auto throws splash health/speed potions"],
+    ["Bow Aimbot", "Auto aim with bows and ranged weapons"],
+    ["Target Strafe", "Circles around your target while attacking"]
+  ],
+  Movement: [
+    ["Anti-Hunger", "Reduces hunger consumption"],
+    ["Flight", "Fly like the wind"],
+    ["NoFall", "Cancels all fall damage"],
+    ["Speed", "Move faster than normal walk/sprint speed"],
+    ["Sprint", "Auto sprint with omni-directional support"],
+    ["Step", "Instantly step up blocks without jumping"],
+    ["Blink", "Holds outgoing packets to fake-freeze your position"],
+    ["Timer", "Speeds up or slows down game tick rate"],
+    ["No Slow", "Removes slowdowns from items, webs, soul sand, etc."],
+    ["Jesus", "Walk on water and lava"],
+    ["Anti Void", "Prevents death from falling into the void"],
+    ["Air Jump", "Jump infinitely while mid-air"],
+    ["Long Jump", "Enhanced jump distance and height"],
+    ["Click TP", "Teleport to wherever your cursor is pointing"],
+    ["Elytra Fly", "Enhanced elytra flight with WASD control"],
+    ["Boat Fly", "Fly while riding boats"],
+    ["Entity Speed", "Speeds up horses, pigs, and other rideable mobs"],
+    ["Scaffold", "Auto places blocks below you as you walk"]
+  ],
+  Player: [
+    ["Auto Fish", "Fully automated fishing with sound detection"],
+    ["No Rotate", "Blocks forced server rotation packets"],
+    ["Fast Break", "Breaks blocks significantly faster"],
+    ["Auto Respawn", "Instantly respawns you on death"],
+    ["Chest Stealer", "Instantly loots all items from chests"],
+    ["Inventory Sort", "Auto sorts your inventory by type/name/stack"]
+  ],
+  Render: [
+    ["NoFluidOverlay", "Removes the fluid overlay from water and fire"],
+    ["HUD", "Customizable Heads-Up Display for client information"],
+    ["Netherite Finder", "Finds ancient debris"],
+    ["Player ESP", "Renders players through walls"],
+    ["Storage ESP", "Renders storage blocks through walls"],
+    ["Target HUD", "Displays detailed info about your target"],
+    ["Fullbright", "Lights up your world"],
+    ["Tracers", "Draws lines pointing to nearby entities"],
+    ["No Fog", "Removes water, lava, and powder snow fog"],
+    ["Zoom", "Enhanced zoom with scroll wheel control"],
+    ["Logout Spots", "Shows where players logged out"]
+  ],
+  World: [
+    ["Auto Sign", "Auto writes text on placed signs"],
+    ["Nuker", "Destroys all blocks around you en masse"],
+    ["Waypoints", "Custom world waypoints with tracers"]
+  ],
+  Misc: [
+    ["Fast Place", "Removes place delay"],
+    ["Freecam", "Move freely without actually moving"],
+    ["Anti Consume", "Conserves fireworks when used"],
+    ["Auto Firework", "Switches to firework and uses it on keybind"],
+    ["Elytra Glide", "Starts flying when attempting to use a firework"],
+    ["Auto Tool", "Automatically switches to best tool"],
+    ["Auto Eat", "Eats food when hunger/health falls below threshold"],
+    ["Auto Mine", "Allows players to automatically mine"],
+    ["Cord Snapper", "Sends base coordinates to Discord webhook"],
+    ["Key Pearl", "Switches to ender pearl and throws on keybind"],
+    ["Name Protect", "Replaces your name with a given one"],
+    ["Auto Tpa", "Helps teleport streamers to you"]
+  ],
+  DonutSMP: [
+    ["Rtp Base Finder", "Automatically searches for bases on DonutSMP"],
+    ["Tunnel Base Finder", "Finds bases by digging tunnel"],
+    ["Bone Dropper", "Automatically drops bones from spawner"],
+    ["Auto Sell", "Automatically sells pickles"],
+    ["Shulker Dropper", "Buys shulkers and drops automatically"],
+    ["Anti Trap", "Helps you escape Polish traps"],
+    ["Auction Sniper", "Snipes items on auction house for cheap"],
+    ["Auto Spawner Sell", "Drops bones from spawner and sells them"]
+  ],
+  Client: [
+    ["Zinc", "Client settings (colors, GUI options)"],
+    ["Self Destruct", "Removes the client from your game"]
+  ]
+};
+
+const catColors = {
+  Combat: '#ff3333',
+  Movement: '#33ccff',
+  Player: '#33ff99',
+  Render: '#ff99ff',
+  World: '#ffcc33',
+  Misc: '#99ccff',
+  DonutSMP: '#cc66ff',
+  Client: '#ff6600'
+};
+
+const tabsEl = document.getElementById('catTabs');
+const gridEl = document.getElementById('modulesGrid');
+let activeCat = 'Combat';
+
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  for (const c of Object.keys(modules)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.role = 'tab';
+    b.setAttribute('aria-selected', c === activeCat);
+    b.className = 'cat-tab' + (c === activeCat ? ' active' : '');
+    b.textContent = c;
+    b.onclick = () => {
+      activeCat = c;
+      renderTabs();
+      renderModules();
+    };
+    tabsEl.appendChild(b);
+  }
+}
+
+function renderModules() {
+  gridEl.innerHTML = '';
+  const col = catColors[activeCat] || '#ff2d2d';
+  for (const [n, d] of modules[activeCat]) {
+    const card = document.createElement('div');
+    card.className = 'mod-card';
+    card.style.setProperty('--cat-color', col);
+    card.innerHTML = `<div class="name">${escapeHtml(n)}</div><div class="desc">${escapeHtml(d)}</div>`;
+    gridEl.appendChild(card);
+  }
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+renderTabs();
+renderModules();
+</script>
+</body>
+</html>
